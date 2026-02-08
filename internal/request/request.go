@@ -45,6 +45,12 @@ func parseRequestLine(b string) (*RequestLine, string, error){
 		return nil, restOfMsg, ERROR_MALFORMED_REQUEST_LINE
 	}
 
+	validMethods := map[string]bool{"GET": true, "POST": true, "PUT": true, "DELETE": true, "PATCH": true, "HEAD": true, "OPTIONS": true}
+   
+	if !validMethods[parts[0]] || parts[2] != "HTTP/1.1" {
+		return nil, restOfMsg, ERROR_MALFORMED_REQUEST_LINE
+	}
+
 	httpParts := strings.Split(parts[2], "/")
 	if len(httpParts) != 2 || httpParts[0] != "HTTP" || httpParts[1] != "1.1" {
 		return nil, restOfMsg, ERROR_MALFORMED_REQUEST_LINE
@@ -74,7 +80,7 @@ func RequestFromReader(reader io.Reader) (*Request, error){
 
 	rl, _, err := parseRequestLine(str)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(fmt.Errorf("Error in request parsing"), err)
 	}
 	return &Request{
 		RequestLine: *rl,
