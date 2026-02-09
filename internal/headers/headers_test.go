@@ -13,7 +13,7 @@ func TestHeaderParse(t *testing.T){
 	n, done, err := headers.Parse(data)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
-	assert.Equal(t, "localhost:42069", headers["Host"])
+	assert.Equal(t, "localhost:42069", headers.Get("Host"))
 	assert.Equal(t, 25, n)
 	assert.True(t, done)
 
@@ -23,7 +23,7 @@ func TestHeaderParse(t *testing.T){
 	n, done, err = headers.Parse(data)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
-	assert.Equal(t, "barbar", headers["FooFoo"])
+	assert.Equal(t, "barbar", headers.Get("FooFoo"))
 	assert.Equal(t, 24, n)
 	assert.True(t, done)
 
@@ -33,8 +33,8 @@ func TestHeaderParse(t *testing.T){
 	n, done, err = headers.Parse(data)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
-	assert.Equal(t, "localhost:42069", headers["Host"])
-	assert.Equal(t, "text/html", headers["Content-Type"])
+	assert.Equal(t, "localhost:42069", headers.Get("Host"))
+	assert.Equal(t, "text/html", headers.Get("Content-Type"))
 	assert.Equal(t, 50, n)
 	assert.True(t, done)
 
@@ -44,13 +44,21 @@ func TestHeaderParse(t *testing.T){
 	n, done, err = headers.Parse(data)
 	require.NoError(t, err)
 	require.NotNil(t, headers)
-	assert.Equal(t, "Bearer token123", headers["Authorization"])
+	assert.Equal(t, "Bearer token123", headers.Get("Authorization"))
 	assert.Equal(t, 32, n)
 	assert.False(t, done)
 
 	// Test: Invalid spacing header - space before colon
 	headers = NewHeaders()
 	data = []byte("       Host : localhost:42069       \r\n\r\n")
+	n, done, err = headers.Parse(data)
+	require.Error(t, err)
+	assert.Equal(t, 0, n)
+	assert.False(t, done)
+
+	// Test constraints
+	headers = NewHeaders()
+	data = []byte("H©st: localhost:42069\r\n\r\n")
 	n, done, err = headers.Parse(data)
 	require.Error(t, err)
 	assert.Equal(t, 0, n)

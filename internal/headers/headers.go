@@ -3,16 +3,53 @@ package headers
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
-type Headers map[string]string
+type Headers struct {
+	headers map[string]string
+}
 
 var rn = []byte("\r\n")	// registered nurse clrf 
 
-func NewHeaders() Headers{
-	return map[string]string{}
+func NewHeaders() *Headers{
+	return &Headers{
+		headers: map[string]string{},
+	}
 }
 
+func (h *Headers) Get(name string) string {
+	return h.headers[strings.ToLower(name)]
+}
+
+func (h *Headers) Set(name, value string) {
+	h.headers[strings.ToLower(name)] = value
+}
+
+/*
+Uppercase letters: A-Z
+Lowercase letters: a-z
+Digits: 0-9
+Special characters: 
+*/
+
+func isToken(str []byte) bool {
+	for _, ch := range str {
+		found := false
+		if ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9'{
+			found = true
+		}
+		switch ch{
+		case '!', '#', '$', '%', '&', '\'', '*', '+', '-', '.', '^', '_', '`', '|', '~':
+			found = true
+
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
 
 // gives key value error if any
 func parseHeader(fieldLine []byte) (string, string, error) {
@@ -55,7 +92,10 @@ func (h Headers) Parse(data []byte) (int, bool, error){
 		if err != nil {
 			return 0, false, err
 		}
-		h[name] = val
+		if !isToken([]byte(name)){
+			return 0, false, fmt.Errorf("malformed header name")
+		}
+		h.Set(name, val)
 		read += idx + len(rn)	// we have taken first header lets move to next one. second header start after rn so idx + len(rn)
 
 	}
