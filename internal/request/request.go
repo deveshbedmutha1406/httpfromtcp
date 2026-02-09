@@ -136,7 +136,7 @@ func RequestFromReader(reader io.Reader) (*Request, error){
 		}
 
 		copy(buf, buf[readN: bufLen])
-		bufLen -= readN
+		bufLen -= readN	// this is to delete the stuff which we have read example request line finished then empty the buffer or replace that place.
 
 	}
 
