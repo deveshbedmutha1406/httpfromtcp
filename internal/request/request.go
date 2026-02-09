@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"boot.theprimeagen.tv/internal/headers"
 )
 
 // GET /coffee HTTP/1.1
@@ -19,17 +20,20 @@ const (
 	StateInit parserState = "init"
 	StateDone parserState = "done"
 	StateError parserState = "error"
+	StateHeaders parserState = "headers"
 )
 
 // request contain multiple thing like request line, headers, body etc...
 type Request struct {
 	RequestLine RequestLine
+	Headers *headers.Headers
 	state parserState
 }
 
 func newRequest() *Request {
 	return &Request{
 		state: StateInit,
+		Headers: headers.NewHeaders(), 
 	}
 }
 
@@ -98,7 +102,19 @@ func (r *Request) parse(data[] byte) (int, error) {
 			}
 			r.RequestLine = *rl
 			read += n
-			r.state = StateDone
+			r.state = StateHeaders
+		case StateHeaders:
+			n, done, err := r.Headers.Parse(data[read:])
+			if err != nil {
+				return 0, err
+			}
+			if n == 0 {	// when it have not yet recv rn clrf
+				break outer
+			}
+			read += n
+			if done {
+				r.state = StateDone
+			}
 		case StateDone:
 			break outer
 		}
