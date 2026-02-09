@@ -23,7 +23,12 @@ func (h *Headers) Get(name string) string {
 }
 
 func (h *Headers) Set(name, value string) {
-	h.headers[strings.ToLower(name)] = value
+	key := strings.ToLower(name)
+	if existing := h.headers[key]; existing != "" {
+		h.headers[key] = existing + "," + value
+	} else {
+		h.headers[key] = value
+	}
 }
 
 /*
