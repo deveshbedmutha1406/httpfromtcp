@@ -34,12 +34,12 @@ func parseHeader(fieldLine []byte) (string, string, error) {
 }
 
 func (h Headers) Parse(data []byte) (int, bool, error){
-	read := 0
+	read := 0	// total bytes read.
 	done := false
 	// data := []byte("Host: localhost:42069\r\nContent-Type: text/html\r\n")
 
 	for {
-		idx := bytes.Index(data[read:], rn)
+		idx := bytes.Index(data[read:], rn)	// start reading from prev read.
 		if idx == -1 {
 			break
 		}
@@ -56,7 +56,7 @@ func (h Headers) Parse(data []byte) (int, bool, error){
 			return 0, false, err
 		}
 		h[name] = val
-		read += idx + len(rn)
+		read += idx + len(rn)	// we have taken first header lets move to next one. second header start after rn so idx + len(rn)
 
 	}
 
