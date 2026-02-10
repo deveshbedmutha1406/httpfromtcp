@@ -75,6 +75,12 @@ func parseHeader(fieldLine []byte) (string, string, error) {
 	return string(name), string(value), nil
 }
 
+func (h *Headers) ForEach(cb func(n, v string)){
+	for n, v := range h.headers {
+		cb(n, v)
+	}
+}
+
 func (h Headers) Parse(data []byte) (int, bool, error){
 	read := 0	// total bytes read.
 	done := false
