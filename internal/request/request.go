@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"boot.theprimeagen.tv/internal/headers"
+	"strconv"
 )
 
 // GET /coffee HTTP/1.1
@@ -21,12 +22,14 @@ const (
 	StateDone parserState = "done"
 	StateError parserState = "error"
 	StateHeaders parserState = "headers"
+	StateBody parserState = "body"
 )
 
 // request contain multiple thing like request line, headers, body etc...
 type Request struct {
 	RequestLine RequestLine
 	Headers *headers.Headers
+	Body string
 	state parserState
 }
 
@@ -34,6 +37,7 @@ func newRequest() *Request {
 	return &Request{
 		state: StateInit,
 		Headers: headers.NewHeaders(), 
+		Body: "",
 	}
 }
 
@@ -47,7 +51,24 @@ var ERROR_REQUEST_IN_ERROR_STATE = fmt.Errorf("request in error state")
 
 var SEPARATOR = []byte("\r\n")
 
+func getInt(headers *headers.Headers, name string, defaultValue int) int {
 
+	contentLength := headers.Get(name)
+	if contentLength == "" {	// content length header not found
+		// if there if no cl then we assume there is no body
+		return defaultValue
+	}
+	clength, err := strconv.Atoi(contentLength)
+	if err != nil {
+		return defaultValue
+	}
+	return clength
+}
+
+func (r *Request) hasBody() bool {
+	bodyLen := getInt(r.Headers, "content-length", 0)
+	return bodyLen != 0
+}
 
 func parseRequestLine(b []byte) (*RequestLine, int, error){
 	idx := bytes.Index(b, SEPARATOR)
@@ -106,6 +127,7 @@ func (r *Request) parse(data[] byte) (int, error) {
 		case StateHeaders:
 			n, done, err := r.Headers.Parse(data[read:])
 			if err != nil {
+				r.state = StateError
 				return 0, err
 			}
 			if n == 0 {	// when it have not yet recv rn clrf
@@ -113,8 +135,33 @@ func (r *Request) parse(data[] byte) (int, error) {
 			}
 			read += n
 			if done {
+				if r.hasBody() {
+					r.state = StateBody
+				}else{
+					r.state = StateDone
+				}
+			}
+		case StateBody:
+			contentLength := getInt(r.Headers,"content-length", 0)
+			if contentLength == 0{
+				r.state = StateDone
+				break outer
+			}
+
+			remaining := min((contentLength - len(r.Body)), len(data[read:]))
+			
+			r.Body += string(data[read:])
+		
+			read += remaining
+
+			if len(r.Body) == contentLength {
 				r.state = StateDone
 			}
+
+			if len(data[read:]) == 0 {
+				break outer
+			}
+
 		case StateDone:
 			break outer
 		}
