@@ -1,16 +1,34 @@
 package main
 
 import (
+	"io"
 	"os"
 	"syscall"
 	"os/signal"
 	"log"
 	"boot.theprimeagen.tv/internal/server"
+	"boot.theprimeagen.tv/internal/request"
+	"boot.theprimeagen.tv/internal/response"
 )
 const port = 42069
 
 func main() {
-	s, err := server.Serve(port)
+	s, err := server.Serve(port, func(w io.Writer, req *request.Request) *server.HandlerError {
+		if req.RequestLine.RequestTarget == "/yourproblem" {
+			return &server.HandlerError{
+				StatusCode: response.StatusInternalServer,
+				Messsage: "your problem message\n",
+			}
+		}else if req.RequestLine.RequestTarget == "/myproblem" {
+			return &server.HandlerError{
+				StatusCode: response.StatusBadRequest,
+				Messsage: "your problem is not my problem\n",
+			}
+		}else{
+			w.Write([]byte("All good frfr\n"))
+		}
+		return nil
+	})
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
