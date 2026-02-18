@@ -36,6 +36,11 @@ func (h *Headers) Replace(name, value string){
 	h.headers[key] = value
 }
 
+func (h *Headers) Delete(name string){
+	name = strings.ToLower(name)
+	delete(h.headers, name)
+}
+
 /*
 Uppercase letters: A-Z
 Lowercase letters: a-z
